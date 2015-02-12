@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+{% macro render(p) %}
+    {% set value = ('value="%s"' % p.default) if p.default else "" %}
+
+    {% if p.type in ("file", 'image') and p.channel == 'input' %}
+        <div class="pure-control-group">
+            <label>
+                <abbr title="{{ p.doc }}">
+                    {{ p.label }}
+                </abbr>
+            </label>
+            <input type="file" name="{{ p.longflag }}" id="{{ p.longflag }}"
+                   accept="{{ p.accept }}"
+                    />
+        </div>
+    {% elif p.type in ("string", "integer", "float", 'image', 'file') %}
+        <div class="pure-control-group">
+            <label for="{{ p.longflag }}">
+                <abbr title="{{ p.doc }}">
+                    {{ p.label }}
+                </abbr>
+            </label>
+            <input type="text" name="{{ p.longflag }}" id="{{ p.longflag }}"
+                   {{ value|safe }}
+                   pattern="{{ p.pattern }}"/>
+        </div>
+    {% elif p.type in ("string-enumeration", "integer-enumeration", "float-enumeration") %}
+        <div class="pure-control-group">
+            <label for="{{ p.longflag }}">
+                <abbr title="{{ p.doc }}">
+                    {{ p.label }}
+                </abbr>
+            </label>
+            {% for val in p.values %}
+                <div class="pure-input">
+                    <label class="pure-radio">
+                        <input type="radio" name="{{ p.longflag }}" value="{{ val }}"
+                                {% if val == p.default %}checked{% endif %}/>
+                        {{ val }}
+                    </label>
+                </div>
+            {% endfor %}
+        </div>
+    {% elif p.type == "boolean" %}
+        <div class="pure-controls">
+            <label for="{{ p.longflag }}" class="pure-checkbox">
+                <input id="{{ p.longflag }}" type="checkbox"> {{ p.label }}
+            </label>
+        </div>
+    {% else %}
+        Unhandled type {{ p.type }}
+    {% endif %}
+{% endmacro %}
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+    <link rel="stylesheet" href="http://yui.yahooapis.com/pure/0.5.0/pure-min.css">
+    <style>
+        body {
+            margin: 2em;
+        }
+
+        div.container {
+            width: 40em;
+            margin: auto;
+        }
+
+        div.structured {
+
+        }
+
+        th {
+            font-weight: bold;
+            text-align: right;
+            vertical-align: top;
+        }
+
+        td {
+            margin-left: 6em;
+            margin-top: -1.1em;
+            width: 40em;
+        }
+
+        legend {
+            font-weight: bold;
+        }
+
+        div.help {
+            font-size: 80%;
+            color: #ccc;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>{{ model.name }}</h1>
+
+    <table class="pure-table pure-table-horizontal">
+        <tr>
+            <th>Title</th>
+            <td>{{ model.title }}</td>
+        </tr>
+
+
+        <tr>
+            <th>Description</th>
+            <td>{{ model.description }}</td>
+        </tr>
+
+        <tr>
+            <th>Categories:</th>
+            <td>{{ model.category }}</td>
+        </tr>
+
+        <tr>
+            <th>License:</th>
+            <td>{{ model.license }}</td>
+        </tr>
+
+        <tr>
+            <th>contributor:</th>
+            <td>{{ model.contributor }}</td>
+        </tr>
+
+    </table>
+
+    <hr>
+
+    <form class="pure-form pure-form-aligned" action="{{ url_for(model.name) }}" method="post" enctype="multipart/form-data">
+        {% for group in model.parameter_groups %}
+            <fieldset>
+                <legend>{{ group.label }}</legend>
+                <div class="help">{{ group.description }}</div>
+                {% for p in group %}
+                    {{ render(p) }}
+                {% endfor %}
+            </fieldset>
+        {% endfor %}
+        <div class="pure-controls">
+            <button type="submit" class="pure-button pure-button-primary">Submit</button>
+        </div>
+    </form>
+</div>
+</body>
+</html>
