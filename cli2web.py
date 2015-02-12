@@ -1,10 +1,16 @@
+import uuid
 import xml.etree.ElementTree as ET
 import subprocess
 import mimetypes
 import tempfile
 
-from flask import Flask, render_template, request, current_app
+from flask import Flask, render_template, request, current_app, send_from_directory, url_for
 from path import Path
+
+
+OUTPUT_DIRECTORIES = {
+    "TEST": "/tmp/test"
+}
 
 
 class XMLArgumentNotSupportedByExecutable(BaseException):
@@ -48,7 +54,7 @@ class CLI(object):
                 return PATTERN[self.type]
             except:
                 if self.file_ext:
-                    pattern = [ "(.+%s)" % sfx.replace('.',r'\.') for sfx in self.file_ext.split(",") ]
+                    pattern = ["(.+%s)" % sfx.replace('.', r'\.') for sfx in self.file_ext.split(",")]
                     return "|".join(pattern)
                 else:
                     return "\w*"
@@ -60,7 +66,7 @@ class CLI(object):
                 m = mimetypes.guess_type("abc" + sfx, False)[0]
                 if m:
                     return m
-                    # return "application/octet"
+                return "application/octet"
 
             if self.file_ext:
                 mimes = filter(bool, map(translate, self.file_ext.split(',')))
@@ -181,13 +187,16 @@ class CLIResource(object):
                         fil.save(place)
                         flags[p.longflag] = place
                 except KeyError:
-                    try:
-                        val = request.values[p.longflag]
+                    val = request.values.get(p.longflag, None)
+
+                    if val is None or val == p.default or val == "":
+                        continue
+
+                    if p.type == 'boolean':
+                        if val == 'true':
+                            flags[p.longflag] = ""
+                    else:
                         flags[p.longflag] = val
-                    except KeyError:
-                        if p.default:
-                            flags[p.longflag] = p.default
-                            # else leave empty
 
         template = current_app.jinja_env.get_template("job.tpl.sh")
         j = template.render(executable=self._executable, flags=flags)
@@ -195,8 +204,17 @@ class CLIResource(object):
         jobfile = dir / "job.sh"
         with open(jobfile, 'w') as fp:
             fp.write(j)
-        print(jobfile)
-        return j
+
+        os.chmod(jobfile, 0755)
+
+        sp = subprocess.Popen(jobfile, cwd=dir)
+        sp.wait()
+
+        token = str(uuid.uuid4())
+
+        OUTPUT_DIRECTORIES[token] = dir
+
+        return "%s <a href='%s'>%s</a>" % ("SUCCESS" if sp.returncode == 0 else "ERROR",url_for("list", token=str(token)), token)
 
 
 def setup(executables):
@@ -218,8 +236,43 @@ def setup(executables):
     def hello_world():
         return render_template("overview.html", resources=resources)
 
+    @app.route("/get/<string:token>")
+    def list(token):
+        try:
+            pth = Path(OUTPUT_DIRECTORIES[token])
+
+            if not pth.exists():
+                raise KeyError()
+
+            files = pth.listdir()
+
+            return render_template("dir.html", token=token, files=files)
+
+        except KeyError:
+            print OUTPUT_DIRECTORIES
+            return "Token invalid"
+
+
+    @app.route("/get/<string:token>/<path:filename>")
+    def get(token, filename):
+        try:
+            pth = Path(OUTPUT_DIRECTORIES[token])
+            filename = pth / filename
+
+            if not pth.exists():
+                return 404, "File not exists"
+
+            return send_from_directory(filename.dirname(), filename.name)
+
+        except KeyError:
+            return "Token invalid"
+
+
+    @app.route('/js/<path:path>')
+    def send_js(path):
+        return send_from_directory('js', path)
+
     return app
 
 
-if __name__ == '__main__':
-    app.run()
+import os

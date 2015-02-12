@@ -2,4 +2,4 @@
 
 {{ executable }} \
 {% for key, value in flags.iteritems() %}       -{{key}} {{value}} \
-{%endfor%}
+{%endfor%} > output.txt

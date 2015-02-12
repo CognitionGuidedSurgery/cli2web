@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+</head>
+<body>
+
+<h1>Job {{ token }}</h1>
+
+<ul>
+    {% for f in files %}
+        <li><a href="{{ url_for("get", token=token, filename = f.name) }}">{{ f.name }}</a></li>
+    {% endfor %}
+</ul>
+
+
+</body>
+</html>
