@@ -1,4 +1,4 @@
-from distutils.core import setup
+from setuptools import setup, find_packages
 
 setup(name='cli2web',
       version='0.1',
@@ -6,7 +6,12 @@ setup(name='cli2web',
       author='Alexander Weigl',
       author_email='Alexander.Weigl@student.kit.edu',
       url='https://github.com/CognitionGuidedSurgery/cli2web',
-      requires=[ 'Flask', 'Flask-Restful', 'path.py', 'pyclictk' ],
+      install_requires=[ 'flask', 'flask_restful', 'path.py', 'pyclictk' ],
       packages=['cli2web'],
-      package_data = { 'cli2web' : ['templates/*']}
+      package_data = { 'cli2web' : ['templates/*']},
+      entry_points={
+        'console_scripts': [
+            'cli2web = cli2web:entrypoint'
+        ]
+      }
 )
