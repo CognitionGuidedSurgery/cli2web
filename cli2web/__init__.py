@@ -9,6 +9,8 @@ from path import Path
 
 from clictk import *
 
+import os
+
 OUTPUT_DIRECTORIES = {
     "TEST": "/tmp/test"
 }
@@ -131,5 +133,6 @@ def setup(executables):
 
     return app
 
-
-import os
+def entrypoint():
+    import sys 
+    setup(sys.argv[1:]).run()

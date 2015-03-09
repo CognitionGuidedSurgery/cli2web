@@ -1,4 +1,0 @@
-Flask
-Flask-Restful
-path.py
-pyclictk
